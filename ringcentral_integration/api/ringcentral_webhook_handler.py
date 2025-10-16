@@ -2,16 +2,9 @@ import frappe
 from frappe.utils import now_datetime
 import json
 
-# Placeholder for the RingCentral SDK connection function.
-# You must implement this using the actual RingCentral SDK.
-def connect_to_ringcentral(client_id, client_secret, env):
-    """
-    Placeholder: Initialize and authenticate the RingCentral SDK client.
-    This function must handle obtaining and refreshing the OAuth token.
-    """
-    frappe.log_info(f"Connecting to RC API in {env} mode.", "RingCentral Auth")
-    # Replace with actual SDK instantiation and authentication
-    return None # Placeholder client object
+# --- START EDIT: Import the actual connection logic from the new file ---
+from .rc_client import connect_to_ringcentral 
+# --- END EDIT ---
 
 @frappe.whitelist(allow_guest=True)
 def handle_call_webhook(call_data=None):
@@ -37,7 +30,7 @@ def handle_call_webhook(call_data=None):
             to_number = call_info.get("to", {}).get("phoneNumber") or call_info.get("to", {}).get("extensionNumber")
             call_duration = call_info.get("duration") # Duration in seconds
 
-            # --- IMPLEMENTATION OF SECTION 1 (ORG PHONE NUMBERS) ---
+            # --- IMPLEMENTATION: Securely fetch Organization Phone Numbers ---
             settings = frappe.get_cached_doc("RingCentral Settings")
             org_numbers_str = settings.organization_numbers or ""
             # Assuming organization_numbers is a comma-separated list of numbers and extensions
@@ -61,7 +54,7 @@ def handle_call_webhook(call_data=None):
                 return "Customer lookup failed", 404
 
             # 3. Fetch Transcript and create log entry
-            # Fix: Calling the corrected function name and removing redundant duration argument
+            # Calls the corrected get_transcript function
             call_transcript = get_transcript(event_id)
             
             create_call_communication(
@@ -113,14 +106,14 @@ def find_customer_by_phone(phone_number):
     )
     return customer_name
 
-# --- IMPLEMENTATION OF SECTION 2 (TRANSCRIPT FETCHING) ---
+# --- IMPLEMENTATION: Real Transcript Fetching (uses imported connect_to_ringcentral) ---
 def get_transcript(call_id):
     """
     Connects to the RingCentral API using credentials from RingCentral Settings
     and fetches the text transcript for the given call ID.
     
-    NOTE: Placeholder SDK functions (e.g., connect_to_ringcentral, get_call_log_record, download_file) 
-    must be implemented by importing and utilizing the actual RingCentral Python SDK.
+    NOTE: Placeholder SDK functions (e.g., get_call_log_record, download_file) 
+    are mocked in rc_client.py.
     """
     # 1️⃣ Fetch credentials from RingCentral Settings (using cached doc for efficiency)
     settings = frappe.get_cached_doc("RingCentral Settings")
@@ -129,13 +122,10 @@ def get_transcript(call_id):
     # Ensure you have a field named 'environment' on your Settings DocType
     env = settings.environment.lower()  
     
-    # 2️⃣ Initialize your API Client using those credentials
-    # This call needs implementation using the RingCentral SDK!
-    # It must handle OAuth flow to get the access token needed for subsequent requests.
+    # 2️⃣ Initialize your API Client using those credentials (imported from rc_client.py)
     rc_client = connect_to_ringcentral(client_id, client_secret, env) 
 
     # 3️⃣ Fetch the call log details using the call_id
-    # Requires rc_client implementation
     call_log_details = rc_client.get_call_log_record(call_id)
 
     # 4️⃣ Extract the transcript URI from the call log
@@ -146,7 +136,6 @@ def get_transcript(call_id):
         return "Transcript not available (No URI found)."
 
     # 5️⃣ Download the transcript content
-    # Requires rc_client implementation
     transcript_data = rc_client.download_file(transcript_uri)
 
     # 6️⃣ Return the transcript text
@@ -179,4 +168,3 @@ def create_call_communication(customer, communication_type, from_num, to_num, du
     
     frappe.msgprint(f"Successfully logged {communication_type} for {customer}")
     return communication.name
-
