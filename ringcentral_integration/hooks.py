@@ -3,9 +3,9 @@ from . import __version__ as app_version
 
 app_name = "ringcentral_integration"
 app_title = "RingCentral Integration"
-app_publisher = "Gemini AI"
+app_publisher = "SurgiShop"
 app_description = "Integrates RingCentral webhooks to log customer calls as Frappe Communications."
-app_email = "support@example.com"
+app_email = "gary.starr@surgishop.com"
 app_license = "mit"
 
 # --- Whitelisted Methods (API Endpoints) ---
